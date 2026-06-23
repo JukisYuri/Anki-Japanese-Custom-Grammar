@@ -3,6 +3,7 @@ import * as dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { REST, Routes } from 'discord.js';
 
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
@@ -16,7 +17,7 @@ const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('
 for (const file of commandFiles) {
     const filePath = `file://${path.join(commandsPath, file)}`;
     
-    import(filePath).then((module) => {
+        const module = await import(filePath);
         const command = module.command;
         if ('data' in command && 'execute' in command) {
             (client as any).commands.set(command.data.name, command);
@@ -24,8 +25,7 @@ for (const file of commandFiles) {
         } else {
             console.warn(`[Cảnh báo] File ${file} thiếu thuộc tính 'data' hoặc 'execute' bắt buộc.`);
         }
-    });
-}
+    };
 
 // Đăng ký các slash command lên Discord API
 client.once('ready', async () => {
@@ -33,8 +33,12 @@ client.once('ready', async () => {
     
     try {
         const commandsData = (client as any).commands.map((cmd: any) => cmd.data.toJSON());
-        await client.application?.commands.set(commandsData);
-        console.log(`Đã đồng bộ ${commandsData.length} lệnh lên Discord.`);
+        const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN!);
+        await rest.put(
+            Routes.applicationCommands(client.user!.id),
+            { body: commandsData },
+        );
+        console.log(`Cập nhật thành công ${commandsData.length} lệnh Toàn Cầu!`);
     } catch (error) {
         console.error("Lỗi khi đăng ký lệnh:", error);
     }

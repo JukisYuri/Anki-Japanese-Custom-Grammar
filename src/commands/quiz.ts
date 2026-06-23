@@ -22,15 +22,46 @@ const userDatabase = new Map<string, UserState>();
 export const command = {
     data: new SlashCommandBuilder()
         .setName('quiz')
-        .setDescription('Chơi sinh tồn với ngữ pháp Anki! Sai 1 câu quay về vạch xuất phát.'),
+        .setDescription('Chơi sinh tồn với ngữ pháp Anki! Sai 1 câu quay về vạch xuất phát.')
+        .addIntegerOption(option => 
+            option.setName('cheat_streak')
+                .setDescription('Chỉ định mốc Streak muốn nhảy đến (Đặc quyền Owner)')
+                .setRequired(false)
+        ),
 
     async execute(interaction: ChatInputCommandInteraction) {
         await interaction.deferReply();
         const userId = interaction.user.id;
+        const OWNER_ID = '607183227911667746'; // Owner ID
 
         // Khởi tạo trạng thái cho người mới
         if (!userDatabase.has(userId)) {
             userDatabase.set(userId, { streak: 0, level: 'N5', hasReachedN4: false });
+        }
+        const userState = userDatabase.get(userId)!;
+        const cheatStreak = interaction.options.getInteger('cheat_streak');
+
+        // Logic xử lý khi có người cố tình nhập tham số cheat_streak
+        if (cheatStreak !== null) {
+            if (userId === OWNER_ID) {
+                userState.streak = cheatStreak;
+                if (cheatStreak >= 20) {
+                    userState.level = 'N4';
+                    userState.hasReachedN4 = true;
+                } else if (cheatStreak < 20 && !userState.hasReachedN4) {
+                    userState.level = 'N5';
+                }
+
+                await interaction.followUp({ 
+                    content: `👑 **[???]** Administrator vừa búng tay và tiến thẳng tới mốc **Streak ${cheatStreak}**!`, 
+                    ephemeral: false 
+                });
+            } else {
+                await interaction.followUp({ 
+                    content: '🚫 Cảnh báo! Bạn không có quyền sử dụng tham số này. Bot sẽ bỏ qua và bắt đầu round bình thường của bạn.', 
+                    ephemeral: true 
+                });
+            }
         }
         await playRound(interaction, userId, true);
     }
@@ -47,13 +78,13 @@ async function playRound(
     let streakInstructions = "";
     
     if (streak < 3) {
-        streakInstructions = "BẮT BUỘC viết kèm nghĩa tiếng Việt của toàn bộ câu hỏi trong ngoặc đơn.";
+        streakInstructions = "[MỨC DỄ]: BẮT BUỘC viết kèm nghĩa tiếng Việt của toàn bộ câu hỏi trong ngoặc đơn. Câu hỏi ngắn (1 mệnh đề). Các đáp án bẫy (distractors) phải khác biệt rõ ràng để học viên dễ chọn.";
     } else if (streak >= 3 && streak < 5) {
-        streakInstructions = "TUYỆT ĐỐI KHÔNG dịch tiếng Việt kế bên câu hỏi.";
+        streakInstructions = "[MỨC TRUNG BÌNH]: TUYỆT ĐỐI KHÔNG dịch tiếng Việt kế bên câu hỏi. Câu hỏi ngắn. Tập trung kiểm tra đúng 1 điểm ngữ pháp cơ bản.";
     } else if (streak >= 5 && streak < 15) {
-        streakInstructions = "TUYỆT ĐỐI KHÔNG dịch tiếng Việt. Câu hỏi phải dài hơn, các đáp án gây nhiễu phải cực kỳ khó phân biệt.";
+        streakInstructions = "[MỨC KHÓ]: TUYỆT ĐỐI KHÔNG dịch tiếng Việt. Câu hỏi phải dài hơn (2 mệnh đề). Các đáp án bẫy phải cực kỳ tinh vi, ví dụ: bẫy cùng một động từ nhưng chia khác thể (VD: 食べる / 食べて / 食べられる), hoặc bẫy các trợ từ hay nhầm lẫn (に / で / を).";
     } else if (streak >= 15) {
-        streakInstructions = "TUYỆT ĐỐI KHÔNG dịch tiếng Việt. Câu hỏi phải ở mức độ cực kỳ khó, đánh lừa nhiều lớp, đáp án dài và phức tạp.";
+        streakInstructions = "[MỨC ĐỊA NGỤC]: TUYỆT ĐỐI KHÔNG dịch tiếng Việt. Câu hỏi dài và đánh lừa nhiều lớp. Đáp án phải bẫy học viên dựa trên 'sắc thái' hoặc 'ngữ cảnh' giao tiếp (Ví dụ: sự khác biệt tinh tế giữa ている và てある). Cả 4 đáp án nhìn qua đều có vẻ đúng, yêu cầu phải hiểu sâu mới làm được.";
     }
 
     // Xử lý Level Up
@@ -72,6 +103,32 @@ async function playRound(
         }
 
         const quiz = await generateGrammarQuiz(vocabList, userState.level, streakInstructions);
+        const optionsArray = [
+            { key: 'A', text: quiz.options.A },
+            { key: 'B', text: quiz.options.B },
+            { key: 'C', text: quiz.options.C },
+            { key: 'D', text: quiz.options.D }
+        ];
+
+        const correctText = (quiz.options as any)[quiz.correctAnswer];
+        // Thuật toán xáo trộn Fisher-Yates
+        for (let i = optionsArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            const temp = optionsArray[i] as { key: string; text: string };
+            optionsArray[i] = optionsArray[j] as { key: string; text: string };
+            optionsArray[j] = temp;
+        }
+
+        quiz.options.A = optionsArray[0]!.text;
+        quiz.options.B = optionsArray[1]!.text;
+        quiz.options.C = optionsArray[2]!.text;
+        quiz.options.D = optionsArray[3]!.text;
+
+        if (quiz.options.A === correctText) quiz.correctAnswer = 'A';
+        else if (quiz.options.B === correctText) quiz.correctAnswer = 'B';
+        else if (quiz.options.C === correctText) quiz.correctAnswer = 'C';
+        else if (quiz.options.D === correctText) quiz.correctAnswer = 'D';
+
         const isHideRecipe = streak >= 7;
         const isHideExplanation = streak >= 10;
 
@@ -137,7 +194,7 @@ async function playRound(
                     userState.level = 'N5 xen kẽ N4';
                 }
                 await i.followUp({ 
-                    content: `:😏 Lệch nhịp! Bạn đã đứt chuỗi **${oldStreak} streak**. Trạng thái đã được reset về 0. Hãy gõ \`/quiz\` để bắt đầu lại!`, 
+                    content: `😏 Lệch nhịp! Bạn đã đứt chuỗi **${oldStreak} streak**. Trạng thái đã được reset về 0. Hãy gõ \`/quiz\` để bắt đầu lại!`, 
                     ephemeral: false 
                 });
             }
