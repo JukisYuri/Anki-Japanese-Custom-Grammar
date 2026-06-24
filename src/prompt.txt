@@ -23,8 +23,9 @@ Chỉ trả về ĐÚNG 1 object JSON. KHÔNG markdown (cấm dùng ```json).
   "explanation": "Dòng giải thích ngắn gọn",
   "recipe": "Công thức ngắn gọn",
   "example": "Ví dụ siêu ngắn",
-  "question": "Câu hỏi tiếng Nhật [   ] (Dịch nghĩa tiếng Việt nếu CHỈ THỊ yêu cầu)",
-  "options": { "A": "...", "B": "...", "C": "...", "D": "..." },
+  "question": "Câu hỏi tiếng Nhật ﹏﹏,
+  "vietnamese": "Dịch nghĩa câu hỏi sang tiếng việt",
+  "options": { "A": "...", "B": "...", "C": "...", "D": "...", "E": "...", "F": "..." },
   "correctAnswer": "A"
-  "reason": "Giải thích chi tiết: Tại sao chọn đáp án này, tại sao các đáp án kia sai."
+  "reason": "Chỉ cần giải thích công thức"
 }

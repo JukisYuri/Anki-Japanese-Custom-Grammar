@@ -1,10 +1,5 @@
 const ANKI_URL = 'http://127.0.0.1:8765';
 
-interface AnkiResponse<T> {
-    result: T;
-    error: string | null;
-}
-
 export interface VocabCard {
     vocab: string;
     meaning: string;
@@ -43,7 +38,7 @@ async function invoke<T>(action: string, params = {}): Promise<T> {
 export async function getGachaVocab(): Promise<VocabCard[]> {
     // Dùng cú pháp search của Anki. 
     // prop:ivl>=21 là Mature, prop:ivl<21 là Young.
-    const deckName = "Core 2k/6k Optimized Japanese Vocabulary";
+    const deckName = "Kaishi 1.5k";
     const matureCardIds = await invoke<number[]>('findCards', { 
         query: `"deck:${deckName}" "prop:ivl>=21"` 
     });
@@ -64,14 +59,11 @@ export async function getGachaVocab(): Promise<VocabCard[]> {
      
     return cardsInfo.map(card => {
         // Ưu tiên lấy Kanji, nếu từ đó không có Kanji thì lấy Kana
-        const vocabRaw = card.fields['Vocabulary-Kanji']?.value 
-                      || card.fields['Vocabulary-Kana']?.value 
-                      || 'Unknown';
+        const vocabRaw = card.fields['Word']?.value || card.fields['Word Reading']?.value;
                       
         // Lấy nghĩa tiếng Anh
-        const meaningRaw = card.fields['Vocabulary-English']?.value || 'Unknown';
+        const meaningRaw = card.fields['Word Meaning']?.value;
         
-        // Clean up HTML tags (Core 2k/6k thường dính rất nhiều tag <div>, <span>)
         return {
             vocab: vocabRaw.replace(/<[^>]+>/g, '').trim(),
             meaning: meaningRaw.replace(/<[^>]+>/g, '').trim()
