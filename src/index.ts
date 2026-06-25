@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { REST, Routes } from 'discord.js';
+import { connectDB } from './services/database.js';
 
 dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
@@ -30,7 +31,7 @@ for (const file of commandFiles) {
 // Đăng ký các slash command lên Discord API
 client.once('ready', async () => {
     console.log(`${client.user?.tag} đã kết nối!`);
-    
+    await connectDB();
     try {
         const commandsData = (client as any).commands.map((cmd: any) => cmd.data.toJSON());
         const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN!);
