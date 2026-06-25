@@ -96,18 +96,40 @@ async function playRound(
     }
 
     try {
+        // Thêm màng lọc $nin để loại bỏ các câu đã chơi
         const randomQuizArray = await Quiz.aggregate([
-            { $match: { language: lang, level: profile.level } },
+            { 
+                $match: { 
+                    language: lang, 
+                    level: profile.level,
+                    _id: { $nin: profile.playedQuizzes }
+                } 
+            },
             { $sample: { size: 1 } }
         ]);
 
+        // Xử lý kịch bản Hết đạn hoặc Phá đảo
         if (randomQuizArray.length === 0) {
-            const emptyMsg = `Kho đạn hệ **${lang.toUpperCase()}** cấp **${profile.level}** hiện đang rỗng. Hãy gọi Admin cày thêm!`;
-            if (isFirstRound) return await (interaction as ChatInputCommandInteraction).editReply(emptyMsg);
-            else return await (interaction as MessageComponentInteraction).followUp(emptyMsg);
+            if (profile.playedQuizzes.length > 0) {
+                // Đã cày hết sạch các câu ở Level này -> Rửa bộ nhớ
+                profile.playedQuizzes = [];
+                await userDoc.save();
+                const resetMsg = `🎉 Chúc mừng! Bạn đã cày nát kho đạn hệ **${lang.toUpperCase()}** cấp **${profile.level}**. Trí nhớ đã được reset, hãy gõ \`/quiz\` để chơi lại vòng mới nhé!`;
+                if (isFirstRound) return await (interaction as ChatInputCommandInteraction).editReply(resetMsg);
+                else return await (interaction as MessageComponentInteraction).followUp(resetMsg);
+            } else {
+                // DB rỗng -> Không có câu hỏi nào để chơi
+                const emptyMsg = `Kho đạn hệ **${lang.toUpperCase()}** cấp **${profile.level}** hiện đang rỗng. Hãy gọi Admin cày thêm!`;
+                if (isFirstRound) return await (interaction as ChatInputCommandInteraction).editReply(emptyMsg);
+                else return await (interaction as MessageComponentInteraction).followUp(emptyMsg);
+            }
         }
 
         const quiz = randomQuizArray[0];
+        
+        // Lưu ID câu hỏi vừa bốc vào bộ nhớ
+        profile.playedQuizzes.push(quiz._id);
+        await userDoc.save();
         
         const rawOptionsArray = [
             { key: 'A', text: quiz.options.A },
@@ -136,7 +158,6 @@ async function playRound(
         });
         
         const tutorialEndNumber = 7;
-        // Logic ẩn UI theo Streak (Giữ nguyên)
         const isHideVietnamese = streak >= 3;
         const isHideRecipe = streak >= 5;
         const isHideExplanation = streak >= tutorialEndNumber;
@@ -149,7 +170,7 @@ async function playRound(
 
         const embedFields = currentKeys.map(key => ({
             name: key,
-            value: mappedOptions[key],
+            value: mappedOptions[key] ? String(mappedOptions[key]) : 'Lỗi không có đáp án',
             inline: true
         }));
 
@@ -206,12 +227,14 @@ async function playRound(
                 if (profile.streak > profile.maxStreak) {
                     profile.maxStreak = profile.streak; 
                 }
-                await userDoc.save(); // lưu tiến độ vào db
+                await userDoc.save(); 
                 await playRound(i, userDoc, false, lang);
             } else {
                 const oldStreak = profile.streak;
                 profile.streak = 0;
-                await userDoc.save(); // lưu thất bại vào db
+                // Trả lời sai -> Reset trí nhớ để ôn tập lại từ đầu
+                profile.playedQuizzes = []; 
+                await userDoc.save(); 
                 
                 await i.followUp({ 
                     content: `😗 Lệch nhịp! Bạn đã đứt chuỗi **${oldStreak} streak** hệ ${lang.toUpperCase()}. Hãy gõ \`/quiz\` để bắt đầu lại!`, 
