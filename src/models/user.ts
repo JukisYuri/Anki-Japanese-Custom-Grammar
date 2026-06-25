@@ -11,12 +11,14 @@ const UserSchema = new Schema({
     jp: {
         streak: { type: Number, default: 0 },
         maxStreak: { type: Number, default: 0 },
-        level: { type: String, default: 'N5' }
+        level: { type: String, default: 'N5' },
+        playedQuizzes: [{ type: Schema.Types.ObjectId, ref: 'Quiz', default: [] }]
     },
     en: {
         streak: { type: Number, default: 0 },
         maxStreak: { type: Number, default: 0 },
-        level: { type: String, default: 'A1/A2' }
+        level: { type: String, default: 'A1/A2' },
+        playedQuizzes: [{ type: Schema.Types.ObjectId, ref: 'Quiz', default: [] }]
     }
 });
 
