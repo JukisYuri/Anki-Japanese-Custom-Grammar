@@ -7,18 +7,18 @@ import path from 'path';
 
 dotenv.config();
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "Không tồn tại GEMINI_API_KEY trong file .env");
 const qwenClient = new OpenAI({
-    apiKey: process.env.QWEN_API_KEY!,
+    apiKey: process.env.QWEN_API_KEY || "Không tồn tại QWEN_API_KEY trong file .env",
     baseURL: "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
 });
 
 const pickModel = [
     'qwen3.6-flash',
     'qwen3.7-plus',
-    'qwen-plus',
     'gemini-3.5-flash',
     'gemini-3-flash-preview',
+    'qwen-plus',
     'gemini-2.5-flash',
     'gemini-3.1-flash-lite'
 ];
