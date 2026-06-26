@@ -14,7 +14,7 @@ NHIỆM VỤ:
 1. Trình bày lý thuyết (tối đa 2 dòng, cốt lõi).
 2. Viết công thức (ngắn gọn, dạng sơ đồ).
 3. Tạo câu hỏi trắc nghiệm (chỉ để trống bằng ký hiệu ﹏﹏).
-4. Tạo 4 đáp án (1 đúng, 3 bẫy).
+4. Tạo các đáp án (1 đúng, còn lại là bẫy ngữ pháp dễ nhầm lẫn).
 
 ĐỊNH DẠNG ĐẦU RA (JSON THUẦN):
 Chỉ trả về ĐÚNG 1 object JSON. KHÔNG markdown (cấm dùng ```json).
