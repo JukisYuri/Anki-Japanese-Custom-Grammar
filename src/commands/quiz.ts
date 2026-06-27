@@ -78,7 +78,9 @@ async function playRound(
     const profile = userDoc[lang];
     const streak = profile.streak;    
     if (lang === 'jp') {
-        if (streak >= 60) {
+        if (streak >= 80) {
+            profile.level = 'N2';
+        } else if (streak >= 40) {
             profile.level = 'N3';
         } else if (streak >= 20) {
             profile.level = 'N4';
@@ -86,7 +88,11 @@ async function playRound(
             profile.level = 'N5';
         }
     } else {
-        if (streak >= 40) {
+        if (streak >= 80) {
+            profile.level = 'C2';
+        } else if (streak >= 60) {
+            profile.level = 'C1';
+        } else if (streak >= 40) {
             profile.level = 'B2';
         } else if (streak >= 20) {
             profile.level = 'B1';

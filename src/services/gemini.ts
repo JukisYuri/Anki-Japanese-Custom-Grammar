@@ -14,8 +14,10 @@ const qwenClient = new OpenAI({
 });
 
 const pickModel = [
-    'qwen3.6-flash',
+    // 'qwen3.6-flash',
+    'qwen3.7-max',
     'qwen3.7-plus',
+    'qwen3.6-plus',
     'gemini-3.5-flash',
     'gemini-3-flash-preview',
     'qwen-plus',
